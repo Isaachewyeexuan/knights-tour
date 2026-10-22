@@ -207,13 +207,14 @@
         }
 
         function getValidMoves(r, c, visitedList) {
-            const moves = [
+            const possibleMoves = [
                 {dr: -2, dc: -1}, {dr: -2, dc: 1}, {dr: -1, dc: -2}, {dr: -1, dc: 2},
                 {dr: 1, dc: -2}, {dr: 1, dc: 2}, {dr: 2, dc: -1}, {dr: 2, dc: 1}
             ];
             let valid = [];
-            for (let m of moves) {
-                let nr = r + m.dr, nc = c + m.dc;
+            // FIXED BUG: Renamed inner variable to 'mv' so it doesn't overwrite global columns variable 'm'
+            for (let mv of possibleMoves) {
+                let nr = r + mv.dr, nc = c + mv.dc;
                 if (nr >= 0 && nr < n && nc >= 0 && nc < m) {
                     if (visitedList.findIndex(pos => pos.r === nr && pos.c === nc) === -1) {
                         valid.push({r: nr, c: nc});
@@ -423,7 +424,7 @@
             }
 
             let validMoves = getValidMoves(curr.r, curr.c, history);
-            if (validMoves.some(m => m.r === r && m.c === c)) {
+            if (validMoves.some(mv => mv.r === r && mv.c === c)) {
                 hidePlayback();
                 history.push({r, c});
                 
