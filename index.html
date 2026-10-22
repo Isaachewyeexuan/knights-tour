@@ -6,707 +6,835 @@
     <title>Knight's Tour</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Base Fonts */
-        body { font-family: 'Georgia', serif; background-color: #fdfbf7; overflow: hidden; display: flex; flex-direction: column; height: 100vh;}
-        h1 { font-family: 'Old English Text MT', 'UnifrakturMaguntia', 'Georgia', serif; }
+        /* Define the Classical & Medieval Fonts */
+        body {
+            font-family: 'Georgia', serif;
+            background-color: #fdfbf7;
+            color: #333;
+        }
+        .medieval-title {
+            font-family: 'Old English Text MT', 'UnifrakturMaguntia', 'Cloister Black', 'Engravers Old English', serif;
+            font-size: 3.5rem;
+            color: #2c3e50;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
         
-        /* Smooth transitions for collapsing panels */
-        .collapsible { transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out; overflow: hidden; }
-        
-        /* Custom Scrollbar for the Board Container */
-        #canvasWrapper::-webkit-scrollbar { width: 12px; height: 12px; }
-        #canvasWrapper::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 6px;}
-        #canvasWrapper::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 6px; border: 2px solid #f1f1f1; }
-        #canvasWrapper::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
-        
-        /* Allows custom dragging on the board */
-        #gameCanvas { display: block; cursor: grab; }
-        #gameCanvas:active { cursor: grabbing; }
+        /* Custom Scrollbar for the Canvas Wrapper */
+        .canvas-container::-webkit-scrollbar {
+            width: 12px;
+            height: 12px;
+        }
+        .canvas-container::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+            border-radius: 8px;
+        }
+        .canvas-container::-webkit-scrollbar-thumb {
+            background: #c1c1c1; 
+            border-radius: 8px;
+        }
+        .canvas-container::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8; 
+        }
+
+        /* Input styling overrides */
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
     </style>
 </head>
-<body>
+<body class="min-h-screen flex flex-col items-center">
 
-    <!-- Medieval Title -->
-    <div class="text-center py-2 shrink-0">
-        <h1 class="text-4xl text-slate-800 font-bold tracking-wider">Knight's Tour</h1>
-    </div>
+    <!-- Title -->
+    <header class="w-full text-center py-4 mt-2">
+        <h1 class="medieval-title leading-none">Knight's Tour</h1>
+    </header>
 
-    <!-- Top Collapsible UI Section -->
-    <div class="w-full bg-white shadow-sm shrink-0 z-10">
-        <button id="topToggleBtn" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-600 py-0.5 text-xs focus:outline-none transition-colors">▲</button>
-        <div id="topPanel" class="collapsible max-h-[500px] opacity-100 flex flex-wrap gap-4 px-4 py-3 border-b">
+    <!-- Main UI Container -->
+    <div class="w-full max-w-6xl px-4 flex flex-col gap-4 flex-grow">
+        
+        <!-- Top Controls Frame -->
+        <div class="flex flex-col md:flex-row gap-4 justify-between items-start w-full">
             
-            <!-- Game Controls -->
-            <div class="flex flex-col gap-2 border-r pr-4">
-                <div class="flex items-center gap-2 text-sm">
-                    <label>Rows (n):</label>
-                    <input type="number" id="rowsInput" value="8" class="w-12 border px-1 rounded">
-                    <label class="ml-2">Cols (m):</label>
-                    <input type="number" id="colsInput" value="8" class="w-12 border px-1 rounded">
-                    
-                    <button id="btnSetSize" class="ml-4 px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded border border-gray-300">Set Size / Restart</button>
-                    <button id="btnReset" class="ml-1 px-3 py-1 bg-red-100 hover:bg-red-200 rounded border border-red-300">Reset</button>
-                    <button id="btnUndo" class="ml-1 px-3 py-1 bg-yellow-100 hover:bg-yellow-200 rounded border border-yellow-300">Undo</button>
-                    <button id="btnSolve" class="ml-1 px-3 py-1 bg-green-100 hover:bg-green-200 rounded border border-green-300">Give Solution</button>
-                </div>
+            <!-- Game Controls (Left Block) -->
+            <div class="bg-white p-4 rounded-lg shadow-md border border-gray-200 flex-grow w-full md:w-auto">
                 
-                <div class="flex items-center gap-4 text-sm mt-1">
-                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chkCounts"> Show Next Path Counts</label>
-                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chkHint"> Hint: Max paths from cell</label>
-                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chkGlobalMax"> Show Global Max Paths</label>
+                <!-- Row 1: Setup & Actions -->
+                <div class="flex flex-wrap items-center gap-3 mb-4">
+                    <label class="font-bold">Rows (n):</label>
+                    <input type="number" id="inp-rows" value="8" min="3" max="50" class="w-16 p-1 border rounded text-center">
+                    
+                    <label class="font-bold ml-2">Cols (m):</label>
+                    <input type="number" id="inp-cols" value="8" min="3" max="50" class="w-16 p-1 border rounded text-center">
+                    
+                    <button id="btn-apply" class="ml-2 px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded font-semibold transition">Set Size / Restart</button>
+                    <button id="btn-reset" class="px-3 py-1 bg-red-100 hover:bg-red-200 text-red-800 rounded font-semibold transition">Reset</button>
+                    <button id="btn-undo" class="px-3 py-1 bg-yellow-100 hover:bg-yellow-200 text-yellow-800 rounded font-semibold transition">Undo</button>
+                    <button id="btn-solve" class="px-3 py-1 bg-green-100 hover:bg-green-200 text-green-800 rounded font-semibold transition">Give Solution</button>
                 </div>
 
-                <!-- Playback Controls (Hidden Initially) -->
-                <div id="playbackControls" class="flex items-center gap-2 bg-gray-50 p-2 border rounded mt-1 hidden">
-                    <button id="btnPlay" class="px-3 py-1 bg-sky-200 hover:bg-sky-300 font-bold rounded">▶</button>
-                    <label class="text-sm ml-2">Speed Delay:</label>
-                    <input type="range" id="speedSlider" min="0" max="0.5" step="0.01" value="0.05" class="w-24">
-                    <button id="btnPrev" class="ml-2 px-3 py-1 bg-orange-100 hover:bg-orange-200 rounded text-sm">Previous</button>
-                    <button id="btnNext" class="ml-1 px-3 py-1 bg-lime-100 hover:bg-lime-200 rounded text-sm">Next</button>
+                <!-- Row 2: Toggles -->
+                <div class="flex flex-wrap items-center gap-6 mb-2">
+                    <label class="flex items-center gap-1 cursor-pointer">
+                        <input type="checkbox" id="chk-counts" class="w-4 h-4 cursor-pointer">
+                        <span>Show Next Path Counts</span>
+                    </label>
+                    <label class="flex items-center gap-1 cursor-pointer">
+                        <input type="checkbox" id="chk-hints" class="w-4 h-4 cursor-pointer">
+                        <span>Hint: Max paths from cell</span>
+                    </label>
+                    <label class="flex items-center gap-1 cursor-pointer">
+                        <input type="checkbox" id="chk-global" class="w-4 h-4 cursor-pointer">
+                        <span>Show Global Max Paths</span>
+                    </label>
+                </div>
+
+                <!-- Row 3: Solution Controls (Hidden initially) -->
+                <div id="solution-controls" class="hidden mt-3 p-3 bg-gray-50 border rounded flex flex-wrap items-center gap-4">
+                    <button id="btn-play" class="px-4 py-1 bg-blue-100 hover:bg-blue-200 text-blue-800 font-bold rounded shadow-sm transition">▶</button>
+                    
+                    <div class="flex items-center gap-2">
+                        <label class="font-semibold text-sm">Speed Delay:</label>
+                        <input type="range" id="inp-speed" min="0" max="500" value="50" class="w-32 cursor-pointer">
+                    </div>
+                    
+                    <button id="btn-prev" class="px-3 py-1 bg-orange-100 hover:bg-orange-200 text-orange-800 rounded font-semibold transition">Previous</button>
+                    <button id="btn-next" class="px-3 py-1 bg-green-100 hover:bg-green-200 text-green-800 rounded font-semibold transition">Next</button>
                 </div>
             </div>
 
-            <!-- Audio Controls -->
-            <div class="flex flex-col gap-2 text-sm pl-2">
-                <span class="font-bold">Audio Controls</span>
-                <div class="flex items-center gap-2">
-                    <label class="flex items-center gap-1 w-24 cursor-pointer"><input type="checkbox" id="chkMuteBGM"> Mute BGM</label>
-                    <input type="range" id="bgmSlider" min="0" max="1" step="0.05" value="1" class="w-20">
-                </div>
-                <div class="flex items-center gap-2">
-                    <label class="flex items-center gap-1 w-24 cursor-pointer"><input type="checkbox" id="chkMuteSFX"> Mute SFX</label>
-                    <input type="range" id="sfxSlider" min="0" max="1" step="0.05" value="1" class="w-20">
+            <!-- Audio Controls (Right Block) -->
+            <div class="bg-white p-4 rounded-lg shadow-md border border-gray-200 min-w-[250px]">
+                <h3 class="font-bold mb-3 border-b pb-1">Audio Controls</h3>
+                
+                <div class="flex flex-col gap-3">
+                    <div class="flex items-center justify-between gap-4">
+                        <label class="flex items-center gap-1 cursor-pointer">
+                            <input type="checkbox" id="chk-mute-bgm" class="w-4 h-4 cursor-pointer">
+                            <span>Mute BGM</span>
+                        </label>
+                        <input type="range" id="vol-bgm" min="0" max="1" step="0.05" value="1.0" class="w-24 cursor-pointer">
+                    </div>
+                    <div class="flex items-center justify-between gap-4">
+                        <label class="flex items-center gap-1 cursor-pointer">
+                            <input type="checkbox" id="chk-mute-sfx" class="w-4 h-4 cursor-pointer">
+                            <span>Mute SFX</span>
+                        </label>
+                        <input type="range" id="vol-sfx" min="0" max="1" step="0.05" value="1.0" class="w-24 cursor-pointer">
+                    </div>
                 </div>
             </div>
+        </div>
+
+        <!-- Status Panel -->
+        <div class="flex flex-wrap items-center gap-6 px-2">
+            <span id="txt-status" class="text-red-600 font-bold text-lg">Click any square to start.</span>
+            <span id="txt-max" class="text-blue-600 font-bold text-lg"></span>
+        </div>
+
+        <!-- Game Canvas Wrapper -->
+        <!-- The wrapper allows scrolling without flex clipping -->
+        <div class="w-full h-full overflow-auto p-4">
+            <!-- mx-auto centers the canvas safely; block prevents bottom margin bugs -->
+            <canvas id="gameCanvas" class="block mx-auto"></canvas>
+        </div>
+
+        <!-- Bottom About Section -->
+        <div class="w-full flex flex-col items-center mt-2 mb-8">
+            <button id="btn-about" class="px-6 py-2 bg-blue-50 border border-blue-200 hover:bg-blue-100 text-blue-800 rounded shadow transition font-semibold">▼ About the Game ▼</button>
             
-        </div>
-    </div>
-
-    <!-- Status Bar -->
-    <div class="px-4 py-2 flex items-center justify-between shrink-0">
-        <div class="flex gap-6">
-            <span id="statusText" class="font-bold text-red-600 text-lg">Click any square to start.</span>
-            <span id="maxPathText" class="font-bold text-blue-600 text-lg"></span>
-        </div>
-        <span class="text-gray-400 text-sm">(Scroll=Pan, Ctrl+Scroll=Zoom Board, Shift+Scroll=Pan H)</span>
-    </div>
-
-    <!-- Canvas Wrapper (Fixed clipping issue: mx-auto centers safely without flex bounding) -->
-    <div id="canvasWrapper" class="w-full flex-grow overflow-auto p-4 relative bg-gray-50">
-        <canvas id="gameCanvas" class="mx-auto shadow-sm rounded-sm bg-white"></canvas>
-    </div>
-
-    <!-- Bottom Collapsible About Section -->
-    <div class="w-full bg-white shadow-[0_-2px_10px_rgba(0,0,0,0.05)] shrink-0 z-10 border-t">
-        <button id="bottomToggleBtn" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-600 py-0.5 text-xs focus:outline-none transition-colors">▲ About the Game ▲</button>
-        <div id="bottomPanel" class="collapsible max-h-0 opacity-0 bg-[#fdfbf7]">
-            <div class="p-6 text-sm leading-relaxed text-gray-800">
-                <p class="font-bold mb-1">HOW TO PLAY:</p>
-                <ol class="list-decimal pl-5 mb-4 space-y-1">
+            <div id="about-panel" class="hidden w-full max-w-4xl mt-3 p-6 bg-[#fdfbf7] border border-gray-300 shadow-md rounded text-left">
+                <h3 class="font-bold text-lg mb-2">HOW TO PLAY:</h3>
+                <ol class="list-decimal list-inside space-y-1 mb-4">
                     <li>Select the board size and click 'Set Size / Restart'.</li>
                     <li>Click any square to place your first Knight.</li>
                     <li>Click on the green highlighted squares to move in an "L" shape.</li>
                     <li>The goal is to visit every square on the board exactly once!</li>
                     <li>Tip: You can click on any previously visited square's number to Undo back to that exact move.</li>
                 </ol>
-                <p class="font-bold mb-1">HISTORY:</p>
+
+                <h3 class="font-bold text-lg mb-2">HISTORY:</h3>
                 <p>The Knight's Tour is a classic mathematical problem dating back to the 9th century in Arabic manuscripts. It was extensively analyzed by the famous mathematician Leonhard Euler in 1759. Finding a full path is a classic example of computing a Hamiltonian path in graph theory.</p>
             </div>
         </div>
+
     </div>
 
+    <!-- Application Logic -->
     <script>
-        // --- Core Game State ---
-        let n = 8, m = 8;
-        let cellSize = 60;
-        let history = []; 
-        let plannedSolution = [];
-        let isPlaying = false;
-        let isSolving = false;
-        let playInterval = null;
+        class KnightsTourGame {
+            constructor() {
+                // DOM Elements
+                this.canvas = document.getElementById('gameCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                
+                this.inpRows = document.getElementById('inp-rows');
+                this.inpCols = document.getElementById('inp-cols');
+                this.statusTxt = document.getElementById('txt-status');
+                this.maxTxt = document.getElementById('txt-max');
+                
+                this.chkCounts = document.getElementById('chk-counts');
+                this.chkHints = document.getElementById('chk-hints');
+                this.chkGlobal = document.getElementById('chk-global');
+                
+                this.solControls = document.getElementById('solution-controls');
+                this.btnPlay = document.getElementById('btn-play');
+                this.inpSpeed = document.getElementById('inp-speed');
+                
+                // Audio Elements
+                this.muteBgm = document.getElementById('chk-mute-bgm');
+                this.muteSfx = document.getElementById('chk-mute-sfx');
+                this.volBgm = document.getElementById('vol-bgm');
+                this.volSfx = document.getElementById('vol-sfx');
 
-        // --- Audio System ---
-        const sfxBaseVols = { click: 0.5, victory: 1.0, gameover: 1.0 };
-        const audioNodes = {
-            bgm: new Audio('bgm.wav'),
-            click: new Audio('click.wav'),
-            victory: new Audio('victory.wav'),
-            gameover: new Audio('gameover.wav')
-        };
-        audioNodes.bgm.loop = true;
+                // Game State
+                this.n = 8;
+                this.m = 8;
+                this.cellSize = 60;
+                this.margin = 40; // Margin for algebraic labels
+                
+                this.history = []; // Array of {r, c}
+                this.visited = new Set(); // Stores strings like "r,c"
+                this.plannedSolution = [];
+                
+                this.isSolving = false;
+                this.isPlaying = false;
+                this.playTimeout = null;
+                
+                // Caches
+                this.hintCache = new Map(); 
+                this.globalMaxCache = 0;
+                
+                // Audio system
+                this.audioInit = false;
+                this.sounds = {
+                    bgm: new Audio('bgm.wav'),
+                    click: new Audio('click.wav'),
+                    victory: new Audio('victory.wav'),
+                    gameover: new Audio('gameover.wav')
+                };
+                
+                this.sfxBaseVols = {
+                    click: 0.5,
+                    victory: 1.0,
+                    gameover: 1.0
+                };
+                
+                this.victoryPlayed = false;
+                this.gameoverPlayed = false;
 
-        let victoryPlayed = false;
-        let gameoverPlayed = false;
-        let audioInitialized = false;
-
-        // --- DOM Elements ---
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const wrapper = document.getElementById('canvasWrapper');
-        
-        const uiRows = document.getElementById('rowsInput');
-        const uiCols = document.getElementById('colsInput');
-        const statusText = document.getElementById('statusText');
-        const maxPathText = document.getElementById('maxPathText');
-        const playBtn = document.getElementById('btnPlay');
-        const playbackControls = document.getElementById('playbackControls');
-
-        // --- Initialization ---
-        function init() {
-            applySize();
-            bindEvents();
-            requestAnimationFrame(drawBoard);
-        }
-
-        // --- Audio Functions ---
-        function initAudioContext() {
-            if (audioInitialized) return;
-            // Attempt to start BGM if not muted
-            if (!document.getElementById('chkMuteBGM').checked) {
-                audioNodes.bgm.volume = parseFloat(document.getElementById('bgmSlider').value);
-                audioNodes.bgm.play().catch(e => console.log("BGM autoplay blocked until user interacts."));
+                this.bindEvents();
+                this.applySize();
             }
-            audioInitialized = true;
-        }
 
-        function playSound(type) {
-            initAudioContext();
-            if (document.getElementById('chkMuteSFX').checked) return;
+            // --- AUDIO HANDLING ---
             
-            const sound = audioNodes[type];
-            if (sound) {
-                const masterVol = parseFloat(document.getElementById('sfxSlider').value);
-                sound.volume = masterVol * sfxBaseVols[type];
-                sound.currentTime = 0; // Rewind to start
-                sound.play().catch(e => {});
-            }
-        }
-
-        function updateAudioVolumes() {
-            if (document.getElementById('chkMuteBGM').checked) {
-                audioNodes.bgm.pause();
-            } else {
-                audioNodes.bgm.volume = parseFloat(document.getElementById('bgmSlider').value);
-                if (audioInitialized) audioNodes.bgm.play().catch(e=>{});
-            }
-        }
-
-        // --- Utility Functions ---
-        function getColLabel(c) {
-            let label = "";
-            while (true) {
-                label = String.fromCharCode(65 + (c % 26)) + label;
-                c = Math.floor(c / 26) - 1;
-                if (c < 0) break;
-            }
-            return label;
-        }
-
-        function isInHistory(r, c) {
-            return history.findIndex(pos => pos.r === r && pos.c === c);
-        }
-
-        function getValidMoves(r, c, visitedList) {
-            const possibleMoves = [
-                {dr: -2, dc: -1}, {dr: -2, dc: 1}, {dr: -1, dc: -2}, {dr: -1, dc: 2},
-                {dr: 1, dc: -2}, {dr: 1, dc: 2}, {dr: 2, dc: -1}, {dr: 2, dc: 1}
-            ];
-            let valid = [];
-            // FIXED BUG: Renamed inner variable to 'mv' so it doesn't overwrite global columns variable 'm'
-            for (let mv of possibleMoves) {
-                let nr = r + mv.dr, nc = c + mv.dc;
-                if (nr >= 0 && nr < n && nc >= 0 && nc < m) {
-                    if (visitedList.findIndex(pos => pos.r === nr && pos.c === nc) === -1) {
-                        valid.push({r: nr, c: nc});
-                    }
+            initAudio() {
+                if(this.audioInit) return;
+                this.audioInit = true;
+                
+                this.sounds.bgm.loop = true;
+                this.updateVolumes();
+                
+                // Attempt to play BGM, ignoring errors if file missing
+                if(!this.muteBgm.checked) {
+                    this.sounds.bgm.play().catch(() => { /* File missing or browser block */ });
                 }
             }
-            return valid;
-        }
 
-        function warnsdorffSort(moves, visitedList) {
-            return moves.sort((a, b) => {
-                let aLen = getValidMoves(a.r, a.c, visitedList).length;
-                let bLen = getValidMoves(b.r, b.c, visitedList).length;
-                return aLen - bLen;
-            });
-        }
-
-        function simulateWarnsdorff(startR, startC, visitedList) {
-            let tempVisited = [...visitedList, {r: startR, c: startC}];
-            let curr = {r: startR, c: startC};
-            let length = tempVisited.length;
-            
-            while (true) {
-                let moves = getValidMoves(curr.r, curr.c, tempVisited);
-                if (moves.length === 0) break;
-                moves = warnsdorffSort(moves, tempVisited);
-                curr = moves[0];
-                tempVisited.push(curr);
-                length++;
-            }
-            return length;
-        }
-
-        function getHeuristicMaxPath() {
-            if (history.length === 0) {
-                let bestMax = 0;
-                for (let r = 0; r < n; r++) {
-                    for (let c = 0; c < m; c++) {
-                        bestMax = Math.max(bestMax, simulateWarnsdorff(r, c, []));
-                    }
-                }
-                return bestMax;
-            } else {
-                let curr = history[history.length - 1];
-                return simulateWarnsdorff(curr.r, curr.c, history);
-            }
-        }
-
-        // --- Game Logic ---
-        function applySize() {
-            let newN = parseInt(uiRows.value);
-            let newM = parseInt(uiCols.value);
-            if (isNaN(newN) || isNaN(newM) || newN < 3 || newM < 3) {
-                alert("Board dimensions should be at least 3x3");
-                return;
-            }
-            n = newN; m = newM;
-            resetGame();
-        }
-
-        function hidePlayback() {
-            isPlaying = false;
-            isSolving = false;
-            clearTimeout(playInterval);
-            plannedSolution = [];
-            playBtn.innerText = "▶";
-            playbackControls.classList.add("hidden");
-        }
-
-        function resetGame() {
-            history = [];
-            victoryPlayed = false;
-            gameoverPlayed = false;
-            hidePlayback();
-            drawBoard();
-        }
-
-        function undoMove() {
-            hidePlayback();
-            victoryPlayed = false;
-            gameoverPlayed = false;
-            if (history.length > 0) {
-                history.pop();
-                drawBoard();
-            }
-        }
-
-        function solveGame() {
-            initAudioContext();
-            if (history.length === n * m) return;
-            hidePlayback();
-            plannedSolution = [];
-            
-            let tempHistory = [...history];
-            
-            if (tempHistory.length === 0) {
-                let bestR = 0, bestC = 0, bestMax = 0;
-                for (let r = 0; r < n; r++) {
-                    for (let c = 0; c < m; c++) {
-                        let l = simulateWarnsdorff(r, c, []);
-                        if (l > bestMax) { bestMax = l; bestR = r; bestC = c; }
-                    }
-                }
-                plannedSolution.push({r: bestR, c: bestC});
-                tempHistory.push({r: bestR, c: bestC});
+            updateVolumes() {
+                this.sounds.bgm.volume = parseFloat(this.volBgm.value);
+                const sfxVol = parseFloat(this.volSfx.value);
+                this.sounds.click.volume = sfxVol * this.sfxBaseVols.click;
+                this.sounds.victory.volume = sfxVol * this.sfxBaseVols.victory;
+                this.sounds.gameover.volume = sfxVol * this.sfxBaseVols.gameover;
             }
 
-            while (tempHistory.length < n * m) {
-                let curr = tempHistory[tempHistory.length - 1];
-                let moves = getValidMoves(curr.r, curr.c, tempHistory);
-                if (moves.length === 0) break;
-                moves = warnsdorffSort(moves, tempHistory);
-                let bestMove = moves[0];
-                tempHistory.push(bestMove);
-                plannedSolution.push(bestMove);
-            }
-            
-            playbackControls.classList.remove("hidden");
-        }
-
-        function togglePlayback() {
-            if (isPlaying) {
-                isPlaying = false;
-                playBtn.innerText = "▶";
-                clearTimeout(playInterval);
-            } else {
-                isPlaying = true;
-                playBtn.innerText = "⏸";
-                isSolving = true;
-                playLoop();
-            }
-        }
-
-        function playLoop() {
-            if (!isPlaying || plannedSolution.length === 0) {
-                isPlaying = false;
-                isSolving = false;
-                playBtn.innerText = "▶";
-                drawBoard();
-                return;
-            }
-            stepForward(true);
-            drawBoard();
-            
-            let delay = parseFloat(document.getElementById('speedSlider').value) * 1000;
-            if (delay > 0) {
-                playInterval = setTimeout(playLoop, delay);
-            } else {
-                playLoop(); // Instant
-            }
-        }
-
-        function stepForward(autoPlaying = false) {
-            if (!autoPlaying) { isPlaying = false; isSolving = false; playBtn.innerText = "▶"; clearTimeout(playInterval); }
-            if (plannedSolution.length > 0) {
-                let nxt = plannedSolution.shift();
-                history.push(nxt);
-                
-                let moves = getValidMoves(nxt.r, nxt.c, history);
-                let isVic = history.length === n * m;
-                let isGO = moves.length === 0 && plannedSolution.length === 0;
-                
-                if (!isVic && !isGO) playSound('click');
-            }
-            if (!autoPlaying) drawBoard();
-        }
-
-        function stepBackward() {
-            isPlaying = false;
-            isSolving = false;
-            playBtn.innerText = "▶";
-            clearTimeout(playInterval);
-            
-            if (history.length > 0) {
-                let lastMove = history.pop();
-                plannedSolution.unshift(lastMove);
-                playSound('click');
-            }
-            drawBoard();
-        }
-
-        function handleCellClick(r, c) {
-            initAudioContext();
-            if (isPlaying) return;
-            
-            let idx = isInHistory(r, c);
-            if (idx !== -1) {
-                if (idx < history.length - 1) {
-                    history = history.slice(0, idx + 1);
-                    hidePlayback();
-                    victoryPlayed = false;
-                    gameoverPlayed = false;
-                    playSound('click');
-                    drawBoard();
-                }
-                return;
-            }
-
-            let curr = history.length > 0 ? history[history.length - 1] : null;
-            
-            if (!curr) {
-                hidePlayback();
-                history.push({r, c});
-                playSound('click');
-                drawBoard();
-                return;
-            }
-
-            let validMoves = getValidMoves(curr.r, curr.c, history);
-            if (validMoves.some(mv => mv.r === r && mv.c === c)) {
-                hidePlayback();
-                history.push({r, c});
-                
-                let futureMoves = getValidMoves(r, c, history);
-                let isVic = history.length === n * m;
-                let isGO = futureMoves.length === 0;
-                
-                if (!isVic && !isGO) playSound('click');
-                drawBoard();
-            }
-        }
-
-        // --- Interaction Handlers ---
-        let isDraggingCanvas = false;
-        let dragStartX = 0, dragStartY = 0;
-        let scrollStartX = 0, scrollStartY = 0;
-
-        function onCanvasDown(e) {
-            if (isPlaying) return;
-            isDraggingCanvas = false;
-            dragStartX = e.clientX;
-            dragStartY = e.clientY;
-            scrollStartX = wrapper.scrollLeft;
-            scrollStartY = wrapper.scrollTop;
-            canvas.style.cursor = 'grabbing';
-        }
-
-        function onCanvasMove(e) {
-            if (isPlaying || e.buttons !== 1) return;
-            let dx = e.clientX - dragStartX;
-            let dy = e.clientY - dragStartY;
-            if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
-                isDraggingCanvas = true;
-                wrapper.scrollLeft = scrollStartX - dx;
-                wrapper.scrollTop = scrollStartY - dy;
-            }
-        }
-
-        function onCanvasUp(e) {
-            canvas.style.cursor = 'grab';
-            if (isPlaying) return;
-            if (!isDraggingCanvas) {
-                let rect = canvas.getBoundingClientRect();
-                let margin = cellSize * 0.6;
-                // Correct scaling
-                let scaleX = canvas.width / rect.width; 
-                let scaleY = canvas.height / rect.height;
-                
-                let x = (e.clientX - rect.left) * scaleX - margin;
-                let y = (e.clientY - rect.top) * scaleY - margin;
-                
-                let c = Math.floor(x / cellSize);
-                let r = Math.floor(y / cellSize);
-                handleCellClick(r, c);
-            }
-            isDraggingCanvas = false;
-        }
-
-        function onCanvasWheel(e) {
-            if (e.ctrlKey) {
-                e.preventDefault(); // Stop entire page zoom
-                if (e.deltaY > 0) {
-                    cellSize = Math.max(20, cellSize - 5);
+            toggleBgm() {
+                this.initAudio();
+                if (this.muteBgm.checked) {
+                    this.sounds.bgm.pause();
                 } else {
-                    cellSize = Math.min(250, cellSize + 5);
+                    this.sounds.bgm.play().catch(()=>{});
                 }
-                drawBoard();
-            } else if (e.shiftKey) {
-                e.preventDefault();
-                wrapper.scrollLeft += e.deltaY; // Horizontal pan
-            }
-            // Normal scroll pans vertically automatically in div
-        }
-
-        // --- Drawing & Rendering ---
-        function updateStatus() {
-            let curr = history.length > 0 ? history[history.length - 1] : null;
-            let moves = curr ? getValidMoves(curr.r, curr.c, history) : [];
-            
-            if (!curr) {
-                statusText.innerText = "Click any square to start.";
-            } else if (history.length === n * m) {
-                statusText.innerText = "Victory! Board Completed!";
-                if (!victoryPlayed) { playSound('victory'); victoryPlayed = true; }
-            } else if (moves.length === 0 && plannedSolution.length === 0) {
-                statusText.innerText = "Game Over! No available moves left.";
-                if (!gameoverPlayed) { playSound('gameover'); gameoverPlayed = true; }
-            } else {
-                statusText.innerText = `Move ${history.length}. Select next path.`;
             }
 
-            if (document.getElementById('chkGlobalMax').checked) {
-                maxPathText.innerText = `Global Max Path: ${getHeuristicMaxPath()} moves`;
-            } else {
-                maxPathText.innerText = "";
-            }
-        }
-
-        function drawBoard() {
-            const margin = cellSize * 0.6;
-            const boardW = m * cellSize;
-            const boardH = n * cellSize;
-            
-            // Adjust Physical Canvas Size
-            canvas.width = boardW + margin * 2;
-            canvas.height = boardH + margin * 2;
-
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.textBaseline = "middle";
-            ctx.textAlign = "center";
-
-            let curr = history.length > 0 ? history[history.length - 1] : null;
-            let validMoves = curr ? getValidMoves(curr.r, curr.c, history) : [];
-            
-            const trailLength = 6;
-            const trailColors = ["#ffeb3b", "#ffc107", "#ff9800", "#ff5722", "#f44336", "#e91e63"];
-            
-            let labelFontSize = Math.max(8, Math.floor(cellSize * 0.35));
-            ctx.font = `bold ${labelFontSize}px Georgia`;
-            ctx.fillStyle = "#555555";
-            
-            // Draw Labels
-            for (let c = 0; c < m; c++) {
-                let lbl = getColLabel(c);
-                let cx = margin + c * cellSize + cellSize / 2;
-                ctx.fillText(lbl, cx, margin / 2);
-                ctx.fillText(lbl, cx, margin + boardH + margin / 2);
-            }
-            for (let r = 0; r < n; r++) {
-                let lbl = String(r + 1);
-                let cy = margin + r * cellSize + cellSize / 2;
-                ctx.fillText(lbl, margin / 2, cy);
-                ctx.fillText(lbl, margin + boardW + margin / 2, cy);
+            playSound(name) {
+                this.initAudio();
+                if (this.muteSfx.checked) return;
+                
+                const s = this.sounds[name];
+                if (s) {
+                    s.currentTime = 0;
+                    s.play().catch(()=>{});
+                }
             }
 
-            // Draw Cells
-            let baseFontSize = Math.max(8, Math.floor(cellSize / 4));
-            let mainFontSize = Math.max(10, Math.floor(cellSize / 3));
+            // --- LOGIC & HELPERS ---
 
-            for (let r = 0; r < n; r++) {
-                for (let c = 0; c < m; c++) {
-                    let x = margin + c * cellSize;
-                    let y = margin + r * cellSize;
-                    
-                    let bgColor = (r + c) % 2 === 0 ? "white" : "#e8e8e8";
-                    
-                    let histIdx = isInHistory(r, c);
-                    let isTrail = false;
-                    
-                    if (curr && curr.r === r && curr.c === c) {
-                        bgColor = trailColors[0];
-                    } else if (isSolving && histIdx >= history.length - trailLength && histIdx < history.length - 1) {
-                        let dist = (history.length - 1) - histIdx;
-                        bgColor = trailColors[Math.min(dist, trailColors.length - 1)];
-                    } else if (validMoves.some(mv => mv.r === r && mv.c === c)) {
-                        bgColor = "#b2ffb2";
-                    } else if (history.length === 0) {
-                        bgColor = "#e6f7ff";
+            getValidMoves(r, c, visitedSet) {
+                const offsets = [
+                    [-2,-1], [-2,1], [-1,-2], [-1,2],
+                    [1,-2], [1,2], [2,-1], [2,1]
+                ];
+                let moves = [];
+                for(let o of offsets) {
+                    let nr = r + o[0];
+                    let nc = c + o[1];
+                    if(nr >= 0 && nr < this.n && nc >= 0 && nc < this.m) {
+                        if(!visitedSet.has(`${nr},${nc}`)) {
+                            moves.push({r: nr, c: nc});
+                        }
                     }
+                }
+                return moves;
+            }
 
-                    ctx.fillStyle = bgColor;
-                    ctx.fillRect(x, y, cellSize, cellSize);
-                    ctx.strokeStyle = "#cccccc";
-                    ctx.lineWidth = 1;
-                    ctx.strokeRect(x, y, cellSize, cellSize);
+            warnsdorffSort(moves, visitedSet) {
+                // Sort by fewest onward moves first
+                return moves.sort((a, b) => {
+                    let degA = this.getValidMoves(a.r, a.c, visitedSet).length;
+                    let degB = this.getValidMoves(b.r, b.c, visitedSet).length;
+                    return degA - degB;
+                });
+            }
 
-                    if (histIdx !== -1) {
-                        ctx.font = `bold ${mainFontSize}px Georgia`;
-                        ctx.fillStyle = "black";
-                        ctx.fillText(String(histIdx + 1), x + cellSize/2, y + cellSize/2);
+            simulateWarnsdorff(startR, startC, visitedSet) {
+                let tempVisited = new Set(visitedSet);
+                tempVisited.add(`${startR},${startC}`);
+                
+                let length = tempVisited.size;
+                let curr = {r: startR, c: startC};
+                
+                while(true) {
+                    let moves = this.getValidMoves(curr.r, curr.c, tempVisited);
+                    if(moves.length === 0) break;
+                    
+                    moves = this.warnsdorffSort(moves, tempVisited);
+                    curr = moves[0];
+                    tempVisited.add(`${curr.r},${curr.c}`);
+                    length++;
+                }
+                return length;
+            }
+
+            getHeuristicMaxPathLength() {
+                if(this.history.length === 0) {
+                    // Caching to prevent stuttering on empty board redraws
+                    if(this.globalMaxCache > 0) return this.globalMaxCache;
+                    
+                    let bestMax = 0;
+                    for(let r=0; r<this.n; r++){
+                        for(let c=0; c<this.m; c++){
+                            bestMax = Math.max(bestMax, this.simulateWarnsdorff(r, c, new Set()));
+                        }
+                    }
+                    this.globalMaxCache = bestMax;
+                    return bestMax;
+                } else {
+                    let curr = this.history[this.history.length - 1];
+                    return this.simulateWarnsdorff(curr.r, curr.c, this.visited);
+                }
+            }
+
+            getColLabel(c) {
+                let label = "";
+                while (true) {
+                    label = String.fromCharCode(65 + (c % 26)) + label;
+                    c = Math.floor(c / 26) - 1;
+                    if (c < 0) break;
+                }
+                return label;
+            }
+
+            // --- UI ACTIONS ---
+
+            bindEvents() {
+                document.getElementById('btn-apply').onclick = () => this.applySize();
+                document.getElementById('btn-reset').onclick = () => this.reset();
+                document.getElementById('btn-undo').onclick = () => this.undo();
+                document.getElementById('btn-solve').onclick = () => this.solve();
+                
+                this.chkCounts.onchange = () => this.drawBoard();
+                this.chkHints.onchange = () => this.drawBoard();
+                this.chkGlobal.onchange = () => this.drawBoard();
+
+                this.btnPlay.onclick = () => this.togglePlay();
+                document.getElementById('btn-prev').onclick = () => this.stepBackward();
+                document.getElementById('btn-next').onclick = () => this.stepForward();
+
+                this.muteBgm.onchange = () => this.toggleBgm();
+                this.volBgm.oninput = () => this.updateVolumes();
+                this.volSfx.oninput = () => this.updateVolumes();
+
+                this.canvas.addEventListener('mousedown', (e) => this.onClick(e));
+
+                document.getElementById('btn-about').onclick = () => {
+                    const panel = document.getElementById('about-panel');
+                    const btn = document.getElementById('btn-about');
+                    if(panel.classList.contains('hidden')) {
+                        panel.classList.remove('hidden');
+                        btn.innerText = "▲ Close About ▲";
                     } else {
-                        let showCounts = document.getElementById('chkCounts').checked;
-                        let showHint = document.getElementById('chkHint').checked;
+                        panel.classList.add('hidden');
+                        btn.innerText = "▼ About the Game ▼";
+                    }
+                };
+            }
+
+            applySize() {
+                let r = parseInt(this.inpRows.value);
+                let c = parseInt(this.inpCols.value);
+                if(isNaN(r) || isNaN(c) || r < 3 || c < 3) {
+                    alert("Board dimensions should be at least 3x3");
+                    return;
+                }
+                this.n = r;
+                this.m = c;
+                this.reset();
+            }
+
+            hideSolutionControls() {
+                this.isPlaying = false;
+                this.isSolving = false;
+                if(this.playTimeout) clearTimeout(this.playTimeout);
+                this.plannedSolution = [];
+                this.btnPlay.innerText = "▶";
+                this.solControls.classList.add('hidden');
+            }
+
+            reset() {
+                this.history = [];
+                this.visited.clear();
+                this.hintCache.clear();
+                this.globalMaxCache = 0;
+                this.victoryPlayed = false;
+                this.gameoverPlayed = false;
+                this.hideSolutionControls();
+                
+                // Adjust canvas size
+                const boardW = this.m * this.cellSize;
+                const boardH = this.n * this.cellSize;
+                
+                // Apply high DPI scaling for crisp canvas text
+                const dpr = window.devicePixelRatio || 1;
+                const w = boardW + this.margin * 2;
+                const h = boardH + this.margin * 2;
+                
+                this.canvas.width = w * dpr;
+                this.canvas.height = h * dpr;
+                this.canvas.style.width = `${w}px`;
+                this.canvas.style.height = `${h}px`;
+                
+                this.ctx.scale(dpr, dpr);
+                
+                this.drawBoard();
+            }
+
+            undo() {
+                this.hideSolutionControls();
+                this.victoryPlayed = false;
+                this.gameoverPlayed = false;
+                if (this.history.length > 0) {
+                    let lastMove = this.history.pop();
+                    this.visited.delete(`${lastMove.r},${lastMove.c}`);
+                    this.hintCache.clear(); // invalidate cache
+                    this.drawBoard();
+                }
+            }
+
+            solve() {
+                if(this.history.length === this.n * this.m) return;
+                
+                this.initAudio();
+                this.hideSolutionControls();
+                this.plannedSolution = [];
+                
+                let tempHistory = [...this.history];
+                let tempVisited = new Set(this.visited);
+                
+                if (tempHistory.length === 0) {
+                    let bestR = 0, bestC = 0, bestMax = 0;
+                    for (let r=0; r<this.n; r++) {
+                        for (let c=0; c<this.m; c++) {
+                            let l = this.simulateWarnsdorff(r, c, new Set());
+                            if(l > bestMax) {
+                                bestMax = l;
+                                bestR = r;
+                                bestC = c;
+                            }
+                        }
+                    }
+                    this.plannedSolution.push({r: bestR, c: bestC});
+                    tempHistory.push({r: bestR, c: bestC});
+                    tempVisited.add(`${bestR},${bestC}`);
+                }
+
+                while (tempHistory.length < this.n * this.m) {
+                    let curr = tempHistory[tempHistory.length - 1];
+                    let moves = this.getValidMoves(curr.r, curr.c, tempVisited);
+                    
+                    if (moves.length === 0) break;
+                    
+                    moves = this.warnsdorffSort(moves, tempVisited);
+                    let bestMove = moves[0];
+                    
+                    tempHistory.push(bestMove);
+                    tempVisited.add(`${bestMove.r},${bestMove.c}`);
+                    this.plannedSolution.push(bestMove);
+                }
+                
+                this.solControls.classList.remove('hidden');
+                this.solControls.classList.add('flex');
+            }
+
+            // --- PLAYBACK MECHANICS ---
+
+            togglePlay() {
+                if (this.isPlaying) {
+                    this.isPlaying = false;
+                    this.btnPlay.innerText = "▶";
+                    clearTimeout(this.playTimeout);
+                } else {
+                    this.isPlaying = true;
+                    this.btnPlay.innerText = "⏸";
+                    this.isSolving = true;
+                    this.playNextStep();
+                }
+            }
+
+            playNextStep() {
+                if(!this.isPlaying || this.plannedSolution.length === 0) {
+                    this.isPlaying = false;
+                    this.isSolving = false;
+                    this.btnPlay.innerText = "▶";
+                    this.drawBoard();
+                    return;
+                }
+                
+                this.stepForwardCore();
+                this.drawBoard();
+                
+                let delay = parseInt(this.inpSpeed.value); // 0 to 500ms
+                if(delay > 0) {
+                    this.playTimeout = setTimeout(() => this.playNextStep(), delay);
+                } else {
+                    // Use requestAnimationFrame for "0" delay to prevent freezing browser
+                    this.playTimeout = setTimeout(() => this.playNextStep(), 1); 
+                }
+            }
+
+            stepForward() {
+                this.isPlaying = false;
+                this.isSolving = false;
+                this.btnPlay.innerText = "▶";
+                clearTimeout(this.playTimeout);
+                if(this.plannedSolution.length > 0) {
+                    this.stepForwardCore();
+                    this.drawBoard();
+                }
+            }
+
+            stepBackward() {
+                this.isPlaying = false;
+                this.isSolving = false;
+                this.btnPlay.innerText = "▶";
+                clearTimeout(this.playTimeout);
+                if(this.history.length > 0) {
+                    let lastMove = this.history.pop();
+                    this.visited.delete(`${lastMove.r},${lastMove.c}`);
+                    this.plannedSolution.unshift(lastMove);
+                    this.hintCache.clear();
+                    this.playSound("click");
+                    this.drawBoard();
+                }
+            }
+
+            stepForwardCore() {
+                let nxt = this.plannedSolution.shift();
+                this.history.push(nxt);
+                this.visited.add(`${nxt.r},${nxt.c}`);
+                this.hintCache.clear();
+                
+                let moves = this.getValidMoves(nxt.r, nxt.c, this.visited);
+                let isVictory = this.history.length === this.n * this.m;
+                let isGameover = moves.length === 0 && this.plannedSolution.length === 0;
+                
+                if(!isVictory && !isGameover) {
+                    this.playSound("click");
+                }
+            }
+
+            // --- INTERACTION ---
+
+            onClick(e) {
+                if(this.isPlaying) return;
+                this.initAudio();
+                
+                const rect = this.canvas.getBoundingClientRect();
+                // Handle CSS scaling
+                const scaleX = this.canvas.style.width ? parseFloat(this.canvas.style.width) / rect.width : 1;
+                const scaleY = this.canvas.style.height ? parseFloat(this.canvas.style.height) / rect.height : 1;
+                
+                const x = (e.clientX - rect.left) * scaleX;
+                const y = (e.clientY - rect.top) * scaleY;
+                
+                let c = Math.floor((x - this.margin) / this.cellSize);
+                let r = Math.floor((y - this.margin) / this.cellSize);
+                
+                if (r < 0 || r >= this.n || c < 0 || c >= this.m) return;
+                
+                // Undo by clicking history
+                if(this.visited.has(`${r},${c}`)) {
+                    let idx = this.history.findIndex(h => h.r === r && h.c === c);
+                    if(idx < this.history.length - 1) {
+                        this.history = this.history.slice(0, idx + 1);
+                        this.visited = new Set(this.history.map(h => `${h.r},${h.c}`));
+                        this.hideSolutionControls();
+                        this.hintCache.clear();
+                        this.victoryPlayed = false;
+                        this.gameoverPlayed = false;
+                        this.playSound("click");
+                        this.drawBoard();
+                    }
+                    return;
+                }
+
+                let curr = this.history.length > 0 ? this.history[this.history.length - 1] : null;
+                
+                if (!curr) {
+                    this.hideSolutionControls();
+                    this.history.push({r, c});
+                    this.visited.add(`${r},${c}`);
+                    this.playSound("click");
+                    this.drawBoard();
+                    return;
+                }
+                
+                let validMoves = this.getValidMoves(curr.r, curr.c, this.visited);
+                let isValid = validMoves.some(m => m.r === r && m.c === c);
+                
+                if (isValid) {
+                    this.hideSolutionControls();
+                    this.history.push({r, c});
+                    this.visited.add(`${r},${c}`);
+                    this.hintCache.clear();
+                    
+                    let newMoves = this.getValidMoves(r, c, this.visited);
+                    let isVictory = this.history.length === this.n * this.m;
+                    let isGameover = newMoves.length === 0;
+                    
+                    if(!isVictory && !isGameover) {
+                        this.playSound("click");
+                    }
+                    this.drawBoard();
+                }
+            }
+
+            // --- RENDERING ---
+
+            updateStatus() {
+                let curr = this.history.length > 0 ? this.history[this.history.length - 1] : null;
+                
+                if (!curr) {
+                    this.statusTxt.innerText = "Click any square to start.";
+                } else {
+                    let moves = this.getValidMoves(curr.r, curr.c, this.visited);
+                    if (this.history.length === this.n * this.m) {
+                        this.statusTxt.innerText = "Victory! Board Completed!";
+                        if(!this.victoryPlayed) {
+                            this.playSound("victory");
+                            this.victoryPlayed = true;
+                        }
+                    } else if (moves.length === 0 && this.plannedSolution.length === 0) {
+                        this.statusTxt.innerText = "Game Over! No available moves left.";
+                        if(!this.gameoverPlayed) {
+                            this.playSound("gameover");
+                            this.gameoverPlayed = true;
+                        }
+                    } else {
+                        this.statusTxt.innerText = `Move ${this.history.length}. Select next path.`;
+                    }
+                }
+                
+                if (this.chkGlobal.checked) {
+                    let maxLen = this.getHeuristicMaxPathLength();
+                    this.maxTxt.innerText = `Global Max Path: ${maxLen} moves`;
+                } else {
+                    this.maxTxt.innerText = "";
+                }
+            }
+
+            drawBoard() {
+                let w = this.canvas.width / (window.devicePixelRatio || 1);
+                let h = this.canvas.height / (window.devicePixelRatio || 1);
+                this.ctx.clearRect(0, 0, w, h);
+                
+                let startX = this.margin;
+                let startY = this.margin;
+                let boardW = this.m * this.cellSize;
+                let boardH = this.n * this.cellSize;
+
+                let curr = this.history.length > 0 ? this.history[this.history.length - 1] : null;
+                let validMoves = curr ? this.getValidMoves(curr.r, curr.c, this.visited) : [];
+                
+                const trailLength = 6;
+                const trailColors = ["#ffeb3b", "#ffc107", "#ff9800", "#ff5722", "#f44336", "#e91e63"];
+                
+                // Font setup
+                const labelFontSize = Math.max(10, Math.floor(this.cellSize * 0.35));
+                this.ctx.font = `bold ${labelFontSize}px Georgia`;
+                this.ctx.fillStyle = "#555";
+                this.ctx.textAlign = "center";
+                this.ctx.textBaseline = "middle";
+
+                // Draw Algebraic Labels
+                for(let c=0; c<this.m; c++) {
+                    let txt = this.getColLabel(c);
+                    let cx = startX + c * this.cellSize + this.cellSize / 2;
+                    this.ctx.fillText(txt, cx, startY / 2);
+                    this.ctx.fillText(txt, cx, startY + boardH + startY / 2);
+                }
+                
+                for(let r=0; r<this.n; r++) {
+                    let txt = (r + 1).toString();
+                    let cy = startY + r * this.cellSize + this.cellSize / 2;
+                    this.ctx.fillText(txt, startX / 2, cy);
+                    this.ctx.fillText(txt, startX + boardW + startX / 2, cy);
+                }
+
+                // Draw Grid
+                for (let r=0; r<this.n; r++) {
+                    for (let c=0; c<this.m; c++) {
+                        let x = startX + c * this.cellSize;
+                        let y = startY + r * this.cellSize;
                         
-                        let cyCount = y + cellSize / 2;
-                        let cyHint = y + cellSize / 2;
+                        let bgColor = (r + c) % 2 === 0 ? "white" : "#e8e8e8";
                         
-                        if (showCounts && showHint) {
-                            cyCount -= baseFontSize * 0.8;
-                            cyHint += baseFontSize * 0.8;
+                        if (curr && r === curr.r && c === curr.c) {
+                            bgColor = trailColors[0];
+                        } else if (this.isSolving && this.history.length > 1) {
+                            // Find index from the end
+                            let idxFromEnd = -1;
+                            for(let i = 1; i <= Math.min(trailLength, this.history.length - 1); i++) {
+                                let hMove = this.history[this.history.length - 1 - i];
+                                if(hMove.r === r && hMove.c === c) {
+                                    idxFromEnd = i;
+                                    break;
+                                }
+                            }
+                            if(idxFromEnd !== -1) {
+                                bgColor = trailColors[Math.min(idxFromEnd, trailColors.length - 1)];
+                            }
                         }
                         
-                        if (showCounts) {
-                            let count = getValidMoves(r, c, history).length;
-                            ctx.font = `bold ${mainFontSize}px Georgia`;
-                            ctx.fillStyle = "#bfbfbf";
-                            ctx.fillText(String(count), x + cellSize/2, cyCount);
+                        if (bgColor === "white" || bgColor === "#e8e8e8") { // Not trail
+                            let isValid = validMoves.some(m => m.r === r && m.c === c);
+                            if (isValid) {
+                                bgColor = "#b2ffb2";
+                            } else if (this.history.length === 0) {
+                                bgColor = "#e6f7ff";
+                            }
                         }
-                        if (showHint) {
-                            let maxL = simulateWarnsdorff(r, c, history);
-                            ctx.font = `bold ${baseFontSize}px Georgia`;
-                            ctx.fillStyle = "#6ca0dc";
-                            ctx.fillText(String(maxL), x + cellSize/2, cyHint);
+                        
+                        this.ctx.fillStyle = bgColor;
+                        this.ctx.fillRect(x, y, this.cellSize, this.cellSize);
+                        this.ctx.strokeStyle = "#cccccc";
+                        this.ctx.lineWidth = 1;
+                        this.ctx.strokeRect(x, y, this.cellSize, this.cellSize);
+                        
+                        // Text Overlay
+                        let baseFontSize = Math.max(9, Math.floor(this.cellSize / 4));
+                        let mainFontSize = Math.max(12, Math.floor(this.cellSize / 3));
+                        
+                        let isVisited = false;
+                        let hIdx = -1;
+                        for(let i=0; i<this.history.length; i++) {
+                            if(this.history[i].r === r && this.history[i].c === c) {
+                                isVisited = true;
+                                hIdx = i + 1;
+                                break;
+                            }
+                        }
+
+                        if (isVisited) {
+                            this.ctx.fillStyle = "black";
+                            this.ctx.font = `bold ${mainFontSize}px Georgia`;
+                            this.ctx.fillText(hIdx.toString(), x + this.cellSize/2, y + this.cellSize/2);
+                        } else {
+                            let showCounts = this.chkCounts.checked;
+                            let showHints = this.chkHints.checked;
+                            
+                            let countY = y + this.cellSize / 2;
+                            let maxY = y + this.cellSize / 2;
+                            
+                            if (showCounts && showHints) {
+                                countY -= baseFontSize * 0.6;
+                                maxY += baseFontSize * 0.8;
+                            }
+                            
+                            if (showCounts) {
+                                let count = this.getValidMoves(r, c, this.visited).length;
+                                this.ctx.fillStyle = "#bfbfbf";
+                                this.ctx.font = `bold ${mainFontSize}px Georgia`;
+                                this.ctx.fillText(count.toString(), x + this.cellSize/2, countY);
+                            }
+                            
+                            if (showHints) {
+                                let maxLen = 0;
+                                let cacheKey = `${r},${c}`;
+                                if(this.hintCache.has(cacheKey)) {
+                                    maxLen = this.hintCache.get(cacheKey);
+                                } else {
+                                    maxLen = this.simulateWarnsdorff(r, c, this.visited);
+                                    this.hintCache.set(cacheKey, maxLen);
+                                }
+                                
+                                this.ctx.fillStyle = "#6ca0dc";
+                                this.ctx.font = `bold ${baseFontSize}px Georgia`;
+                                this.ctx.fillText(maxLen.toString(), x + this.cellSize/2, maxY);
+                            }
                         }
                     }
                 }
-            }
 
-            // Draw Trail Line
-            if (isSolving && history.length > 1) {
-                let points = history.slice(-trailLength).map(p => ({
-                    x: margin + p.c * cellSize + cellSize / 2,
-                    y: margin + p.r * cellSize + cellSize / 2
-                }));
-                
-                ctx.lineCap = "round";
-                ctx.lineJoin = "round";
-                for (let i = 0; i < points.length - 1; i++) {
-                    ctx.beginPath();
-                    ctx.moveTo(points[i].x, points[i].y);
-                    ctx.lineTo(points[i+1].x, points[i+1].y);
-                    ctx.strokeStyle = "#d32f2f";
-                    ctx.lineWidth = Math.max(1, (i + 2) * (cellSize / 60));
-                    ctx.stroke();
+                // Draw Trail Line
+                if (this.isSolving && this.history.length > 1) {
+                    this.ctx.strokeStyle = "#d32f2f";
+                    this.ctx.lineCap = "round";
+                    this.ctx.lineJoin = "round";
+                    
+                    let limit = Math.min(trailLength, this.history.length);
+                    for (let i = 0; i < limit - 1; i++) {
+                        let h1 = this.history[this.history.length - limit + i];
+                        let h2 = this.history[this.history.length - limit + i + 1];
+                        
+                        let px1 = startX + h1.c * this.cellSize + this.cellSize/2;
+                        let py1 = startY + h1.r * this.cellSize + this.cellSize/2;
+                        let px2 = startX + h2.c * this.cellSize + this.cellSize/2;
+                        let py2 = startY + h2.r * this.cellSize + this.cellSize/2;
+                        
+                        // Thicker towards the head
+                        this.ctx.lineWidth = Math.max(2, (i + 2) * (this.cellSize / 60));
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(px1, py1);
+                        this.ctx.lineTo(px2, py2);
+                        this.ctx.stroke();
+                    }
                 }
+
+                this.updateStatus();
             }
-            
-            updateStatus();
         }
 
-        // --- Bind Events ---
-        function bindEvents() {
-            document.getElementById('btnSetSize').addEventListener('click', applySize);
-            document.getElementById('btnReset').addEventListener('click', resetGame);
-            document.getElementById('btnUndo').addEventListener('click', undoMove);
-            document.getElementById('btnSolve').addEventListener('click', solveGame);
-            document.getElementById('btnPlay').addEventListener('click', togglePlayback);
-            document.getElementById('btnPrev').addEventListener('click', stepBackward);
-            document.getElementById('btnNext').addEventListener('click', () => stepForward(false));
-            
-            document.getElementById('chkCounts').addEventListener('change', drawBoard);
-            document.getElementById('chkHint').addEventListener('change', drawBoard);
-            document.getElementById('chkGlobalMax').addEventListener('change', drawBoard);
-            
-            document.getElementById('chkMuteBGM').addEventListener('change', updateAudioVolumes);
-            document.getElementById('bgmSlider').addEventListener('input', updateAudioVolumes);
-            document.getElementById('chkMuteSFX').addEventListener('change', updateAudioVolumes);
-            document.getElementById('sfxSlider').addEventListener('input', updateAudioVolumes);
-            
-            canvas.addEventListener('mousedown', onCanvasDown);
-            window.addEventListener('mousemove', onCanvasMove);
-            window.addEventListener('mouseup', onCanvasUp);
-            wrapper.addEventListener('wheel', onCanvasWheel, {passive: false});
-
-            // UI Toggles
-            document.getElementById('topToggleBtn').addEventListener('click', function() {
-                const panel = document.getElementById('topPanel');
-                if (panel.style.maxHeight === "0px" || panel.classList.contains("opacity-0")) {
-                    panel.style.maxHeight = "500px";
-                    panel.classList.remove("opacity-0", "p-0", "border-b-0");
-                    panel.classList.add("opacity-100", "px-4", "py-3", "border-b");
-                    this.innerText = "▲";
-                } else {
-                    panel.style.maxHeight = "0px";
-                    panel.classList.remove("opacity-100", "px-4", "py-3", "border-b");
-                    panel.classList.add("opacity-0", "p-0", "border-b-0");
-                    this.innerText = "▼";
-                }
-            });
-
-            document.getElementById('bottomToggleBtn').addEventListener('click', function() {
-                const panel = document.getElementById('bottomPanel');
-                if (panel.style.maxHeight === "0px" || panel.style.maxHeight === "") {
-                    panel.style.maxHeight = panel.scrollHeight + "px";
-                    panel.classList.remove("opacity-0");
-                    panel.classList.add("opacity-100");
-                    this.innerText = "▼ Close ▼";
-                } else {
-                    panel.style.maxHeight = "0px";
-                    panel.classList.remove("opacity-100");
-                    panel.classList.add("opacity-0");
-                    this.innerText = "▲ About the Game ▲";
-                }
-            });
-            
-            // Un-focus inputs after pressing enter to prevent bugs
-            [uiRows, uiCols].forEach(inp => inp.addEventListener('keyup', (e) => {
-                if (e.key === "Enter") { applySize(); inp.blur(); }
-            }));
-        }
-
-        window.onload = init;
+        // Initialize Game once DOM is ready
+        window.onload = () => {
+            const app = new KnightsTourGame();
+        };
     </script>
 </body>
 </html>
